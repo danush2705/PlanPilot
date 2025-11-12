@@ -12,6 +12,7 @@ from jinja2 import Environment, FileSystemLoader
 from io import BytesIO
 import os
 import json
+import re
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -57,11 +58,6 @@ class PlanResponse(BaseModel):
     resourceSuggestions: List[str]
     ganttData: GanttData
 
-class ChatResponse(BaseModel):
-    assistantReply: str
-    progress: int
-    isSufficient: bool
-
 # Initialize FastAPI app
 app = FastAPI(title="LyzrFlow API", version="2.0.0")
 
@@ -81,177 +77,330 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 template_env = Environment(loader=FileSystemLoader('.'))
 REPORT_TEMPLATE = template_env.get_template("report_template.html")
 
+# Smart Mock Data Generator
+def generate_smart_mock_data(user_input: str) -> PlanResponse:
+    """
+    Generate relevant mock data based on user input keywords.
+    Used as fallback when all LLM models fail.
+    """
+    today = datetime.now()
+    input_lower = user_input.lower()
+    
+    # Detect project type from keywords
+    project_type = 'generic_web'
+    if any(word in input_lower for word in ['fitness', 'workout', 'exercise', 'health', 'gym']):
+        project_type = 'fitness_app'
+    elif any(word in input_lower for word in ['ecommerce', 'e-commerce', 'shop', 'store', 'sell', 'buy', 'product']):
+        project_type = 'ecommerce'
+    elif any(word in input_lower for word in ['portfolio', 'personal', 'resume', 'cv']):
+        project_type = 'portfolio'
+    elif any(word in input_lower for word in ['marketing', 'campaign', 'advertis', 'promo']):
+        project_type = 'marketing'
+    elif any(word in input_lower for word in ['mobile', 'app', 'ios', 'android']):
+        project_type = 'mobile_app'
+    
+    # Extract timeline (default to 8 weeks if not found)
+    timeline_weeks = 8
+    timeline_match = re.search(r'(\d+)\s*(month|week|day)', input_lower)
+    if timeline_match:
+        duration = int(timeline_match.group(1))
+        unit = timeline_match.group(2)
+        if 'month' in unit:
+            timeline_weeks = duration * 4
+        elif 'week' in unit:
+            timeline_weeks = duration
+        elif 'day' in unit:
+            timeline_weeks = max(1, duration // 7)
+    
+    # Project templates
+    templates = {
+        'fitness_app': {
+            'projectName': 'Fitness Tracking Mobile Application',
+            'executiveSummary': f'A comprehensive mobile fitness application designed to help users track workouts, monitor progress, and achieve health goals. The project will be delivered over {timeline_weeks} weeks with a focus on user engagement and data visualization.',
+            'keyMilestones': [
+                'User Authentication & Profile Setup Complete',
+                'Workout Logging Module Implemented',
+                'Progress Tracking & Charts Integration',
+                'Social Features & Sharing Enabled',
+                'Testing & App Store Deployment'
+            ],
+            'technologyStack': [
+                TechnologyStack(component='Mobile App', technology='React Native', rationale='Cross-platform development for iOS and Android with native performance'),
+                TechnologyStack(component='Backend API', technology='Node.js + Express', rationale='Fast, scalable backend for real-time workout data synchronization'),
+                TechnologyStack(component='Database', technology='MongoDB', rationale='Flexible schema for diverse workout types and user data'),
+                TechnologyStack(component='Cloud Storage', technology='AWS S3', rationale='Reliable storage for user photos and progress images')
+            ],
+            'resourceSuggestions': ['1x Mobile Developer (React Native)', '1x Backend Developer', '1x UI/UX Designer', '1x QA Tester'],
+            'tasks': [
+                ('User Authentication System', 5, 'Mobile Developer'),
+                ('Workout Logging Interface', 7, 'Mobile Developer'),
+                ('Backend API Development', 10, 'Backend Developer'),
+                ('Progress Charts & Analytics', 7, 'Mobile Developer'),
+                ('Social Features Integration', 5, 'Mobile Developer'),
+                ('Testing & Bug Fixes', 7, 'QA Tester')
+            ]
+        },
+        'ecommerce': {
+            'projectName': 'E-Commerce Platform Development',
+            'executiveSummary': f'A modern e-commerce platform enabling online product sales with secure payment processing, inventory management, and customer analytics. Development timeline spans {timeline_weeks} weeks with focus on security and user experience.',
+            'keyMilestones': [
+                'Product Catalog & Search Functionality',
+                'Shopping Cart & Checkout System',
+                'Payment Gateway Integration',
+                'Order Management Dashboard',
+                'Launch & Marketing Integration'
+            ],
+            'technologyStack': [
+                TechnologyStack(component='Frontend', technology='React + Next.js', rationale='SEO-friendly server-side rendering for better product discoverability'),
+                TechnologyStack(component='Backend', technology='Node.js + Express', rationale='Scalable API for handling product and order management'),
+                TechnologyStack(component='Database', technology='PostgreSQL', rationale='Reliable relational database for transactional data integrity'),
+                TechnologyStack(component='Payment', technology='Stripe', rationale='Secure, PCI-compliant payment processing with global support')
+            ],
+            'resourceSuggestions': ['1x Full-Stack Developer', '1x Frontend Developer', '1x Backend Developer', '1x UI/UX Designer'],
+            'tasks': [
+                ('Product Catalog Setup', 7, 'Backend Developer'),
+                ('Shopping Cart Implementation', 5, 'Frontend Developer'),
+                ('Payment Gateway Integration', 7, 'Backend Developer'),
+                ('Order Management System', 7, 'Full-Stack Developer'),
+                ('Admin Dashboard', 7, 'Frontend Developer'),
+                ('Testing & Security Audit', 7, 'QA Tester')
+            ]
+        },
+        'portfolio': {
+            'projectName': 'Personal Portfolio Website',
+            'executiveSummary': f'A professional portfolio website showcasing projects, skills, and experience. Clean, modern design with fast loading times and mobile responsiveness. Completion targeted for {timeline_weeks} weeks.',
+            'keyMilestones': [
+                'Design & Wireframing Complete',
+                'Homepage & About Section',
+                'Projects Gallery Implementation',
+                'Contact Form & Integration',
+                'Deployment & SEO Optimization'
+            ],
+            'technologyStack': [
+                TechnologyStack(component='Frontend', technology='Next.js', rationale='Static site generation for blazing-fast performance and SEO'),
+                TechnologyStack(component='Styling', technology='Tailwind CSS', rationale='Utility-first CSS for rapid, responsive design'),
+                TechnologyStack(component='Hosting', technology='Vercel', rationale='Seamless deployment with automatic HTTPS and CDN'),
+                TechnologyStack(component='CMS', technology='Contentful', rationale='Easy content management without code changes')
+            ],
+            'resourceSuggestions': ['1x Full-Stack Developer', '1x UI/UX Designer'],
+            'tasks': [
+                ('Design & Wireframes', 3, 'UI/UX Designer'),
+                ('Homepage Development', 5, 'Full-Stack Developer'),
+                ('Projects Gallery', 5, 'Full-Stack Developer'),
+                ('Contact Form Setup', 3, 'Full-Stack Developer'),
+                ('SEO & Performance Optimization', 3, 'Full-Stack Developer'),
+                ('Deployment & Testing', 2, 'Full-Stack Developer')
+            ]
+        },
+        'marketing': {
+            'projectName': 'Marketing Campaign Planning',
+            'executiveSummary': f'A comprehensive marketing campaign designed to increase brand awareness and drive conversions. Strategic planning and execution over {timeline_weeks} weeks with measurable KPIs and multi-channel approach.',
+            'keyMilestones': [
+                'Market Research & Audience Analysis',
+                'Campaign Strategy & Content Plan',
+                'Creative Assets Development',
+                'Campaign Launch & Monitoring',
+                'Performance Analysis & Optimization'
+            ],
+            'technologyStack': [
+                TechnologyStack(component='Analytics', technology='Google Analytics', rationale='Comprehensive tracking of campaign performance and user behavior'),
+                TechnologyStack(component='Email Marketing', technology='Mailchimp', rationale='Automated email campaigns with A/B testing capabilities'),
+                TechnologyStack(component='Social Media', technology='Hootsuite', rationale='Centralized social media management and scheduling'),
+                TechnologyStack(component='Ad Management', technology='Google Ads', rationale='Targeted advertising with detailed performance metrics')
+            ],
+            'resourceSuggestions': ['1x Marketing Manager', '1x Content Creator', '1x Graphic Designer', '1x Data Analyst'],
+            'tasks': [
+                ('Market Research', 5, 'Marketing Manager'),
+                ('Campaign Strategy Development', 5, 'Marketing Manager'),
+                ('Content Creation', 10, 'Content Creator'),
+                ('Creative Assets Design', 7, 'Graphic Designer'),
+                ('Campaign Launch', 3, 'Marketing Manager'),
+                ('Performance Monitoring', 10, 'Data Analyst')
+            ]
+        },
+        'mobile_app': {
+            'projectName': 'Mobile Application Development',
+            'executiveSummary': f'A feature-rich mobile application for iOS and Android platforms. Focus on intuitive user experience, performance optimization, and scalability. Development timeline of {timeline_weeks} weeks with iterative testing.',
+            'keyMilestones': [
+                'Requirements & Wireframing',
+                'Core Features Implementation',
+                'Backend Integration',
+                'Testing & Bug Fixes',
+                'App Store Submission'
+            ],
+            'technologyStack': [
+                TechnologyStack(component='Mobile Framework', technology='React Native', rationale='Single codebase for both iOS and Android with native performance'),
+                TechnologyStack(component='Backend', technology='Firebase', rationale='Real-time database and authentication with minimal backend code'),
+                TechnologyStack(component='State Management', technology='Redux', rationale='Predictable state management for complex app logic'),
+                TechnologyStack(component='Push Notifications', technology='OneSignal', rationale='Reliable push notifications with segmentation support')
+            ],
+            'resourceSuggestions': ['2x Mobile Developers', '1x Backend Developer', '1x UI/UX Designer', '1x QA Tester'],
+            'tasks': [
+                ('App Architecture Setup', 5, 'Mobile Developer'),
+                ('UI Implementation', 10, 'Mobile Developer'),
+                ('Backend Integration', 7, 'Backend Developer'),
+                ('Feature Development', 14, 'Mobile Developer'),
+                ('Testing & QA', 7, 'QA Tester'),
+                ('App Store Deployment', 3, 'Mobile Developer')
+            ]
+        },
+        'generic_web': {
+            'projectName': 'Web Application Development',
+            'executiveSummary': f'A modern web application built with industry best practices and scalable architecture. The project encompasses design, development, testing, and deployment over {timeline_weeks} weeks with focus on user experience and performance.',
+            'keyMilestones': [
+                'Requirements & Design Complete',
+                'Frontend Development Phase',
+                'Backend & Database Setup',
+                'Integration & Testing',
+                'Production Deployment'
+            ],
+            'technologyStack': [
+                TechnologyStack(component='Frontend', technology='React', rationale='Component-based architecture for maintainable and reusable UI'),
+                TechnologyStack(component='Backend', technology='Node.js', rationale='JavaScript everywhere with high performance async I/O'),
+                TechnologyStack(component='Database', technology='PostgreSQL', rationale='Robust relational database with ACID compliance'),
+                TechnologyStack(component='Hosting', technology='AWS', rationale='Scalable cloud infrastructure with global reach')
+            ],
+            'resourceSuggestions': ['1x Project Manager', '2x Full-Stack Developers', '1x UI/UX Designer', '1x QA Engineer'],
+            'tasks': [
+                ('Project Planning', 3, 'Project Manager'),
+                ('UI/UX Design', 7, 'UI/UX Designer'),
+                ('Frontend Development', 14, 'Full-Stack Developer'),
+                ('Backend Development', 14, 'Full-Stack Developer'),
+                ('Integration & Testing', 7, 'QA Engineer'),
+                ('Deployment', 3, 'Full-Stack Developer')
+            ]
+        }
+    }
+    
+    # Get template for detected project type
+    template = templates.get(project_type, templates['generic_web'])
+    
+    # Build Gantt chart data
+    gantt_tasks = []
+    gantt_links = []
+    current_date = today
+    
+    for idx, (task_name, duration, owner) in enumerate(template['tasks'], 1):
+        gantt_tasks.append(
+            GanttTask(
+                id=idx,
+                text=task_name,
+                start_date=current_date.strftime("%Y-%m-%d"),
+                duration=duration,
+                progress=0,
+                owner=owner
+            )
+        )
+        if idx > 1:
+            gantt_links.append(GanttLink(id=idx-1, source=idx-1, target=idx, type="0"))
+        current_date += timedelta(days=duration)
+    
+    # Create and return the plan
+    return PlanResponse(
+        projectName=template['projectName'],
+        executiveSummary=template['executiveSummary'],
+        keyMilestones=template['keyMilestones'],
+        technologyStack=template['technologyStack'],
+        resourceSuggestions=template['resourceSuggestions'],
+        ganttData=GanttData(data=gantt_tasks, links=gantt_links)
+    )
+
 # API Endpoints
-@app.post("/chat", response_model=ChatResponse)
-async def chat(chat_history: ChatHistory):
-    """
-    Intelligent chat endpoint that guides users through project planning.
-    Returns conversational replies and indicates when enough info is gathered.
-    """
-    # Get current date for context
-    current_date = datetime.now().strftime("%B %d, %Y")
-    
-    # Create intelligent chat system prompt with STRICT example enforcement
-    system_prompt = f"""You are 'LyzrFlow', an AI project planner.
-
-Current date: {current_date}
-
-**YOUR #1 RULE:** When you ask the user a question, you **MUST** provide 2-3 brief, concrete examples in parentheses `()` to guide them. This is your most important task.
-
-**YOUR #2 RULE (CHAT FLOW):** You must ask **only one question at a time.** Do not ask for 'goal' and 'timeline' in the same message. This makes the conversation feel robotic.
-
-**Example Good Reply:** 'That's a great project! To start, what's the main goal of this portfolio? (e.g., get a job, showcase art, be a personal blog)'
-
-**Example Bad Reply:** 'What is the main goal? and 2) What is the timeline?'
-
-**YOUR GOAL:**
-Your overall goal is to gather 3-4 key pieces of information (Goal, Timeline, Features, Team Size). You must do this by asking *one question at a time*, with examples.
-
-**GREETING DETECTION (CRITICAL):**
-If the user's latest message is ONLY a greeting (like 'hi', 'hello', 'how are you') or any other query that is clearly NOT a project description:
-- Reply politely (e.g., 'Hello! What project can I help you plan?')
-- Set progress to 0
-- Set isSufficient to false
-
-**CONVERSATION FLOW:**
-1. When user gives a project idea, acknowledge it warmly and ask ONE follow-up question with examples in parentheses.
-   Example: 'That sounds exciting! What's the main goal of this app? (e.g., help users track fitness, connect with friends, manage tasks)'
-
-2. After they answer, ask the NEXT question (one at a time) with examples.
-   Example: 'Great! What's your timeline for this project? (e.g., 2 months, 6 months, 1 year)'
-
-3. Continue asking one question at a time until you have: Goal, Timeline, Features, and Team Size.
-
-**PROGRESS TRACKING:**
-Estimate your progress as a percentage (0-100):
-- 0%: No information or just greetings
-- 25%: Have project goal
-- 50%: Have project goal + timeline
-- 75%: Have project goal + timeline + team size
-- 100%: Have all 4 key pieces
-
-**STOP RULE:**
-After you have all the key info, you **must** stop and give your concluding statement (e.g., 'Great, I have all the details... please click Generate Report.').
-
-**OUTPUT FORMAT:**
-You must return ONLY a valid JSON object with this exact structure:
-{{
-  "assistantReply": "Your conversational reply here",
-  "progress": 0,
-  "isSufficient": false
-}}
-
-IMPORTANT: 
-- progress must be 100 if you are giving your concluding statement
-- isSufficient must be true if progress is 100, otherwise it must be false
-- You must NEVER set isSufficient to true for greetings, empty messages, or non-project queries
-- ALWAYS include examples in parentheses when asking questions
-- ALWAYS ask only ONE question at a time
-
-Return ONLY the JSON - no markdown, no code blocks, no extra text."""
-
-    # Format messages for Groq
-    formatted_messages = [
-        {"role": "system", "content": system_prompt}
-    ]
-    
-    # Add user conversation history
-    for msg in chat_history.messages:
-        formatted_messages.append({
-            "role": msg.role,
-            "content": msg.content
-        })
-    
-    try:
-        # Call Groq with Llama 3.3 70B
-        chat_completion = client.chat.completions.create(
-            messages=formatted_messages,
-            model="llama-3.3-70b-versatile",
-            temperature=0.7,
-            response_format={"type": "json_object"}
-        )
-        
-        # Parse the JSON response
-        response_content = chat_completion.choices[0].message.content
-        chat_data = json.loads(response_content)
-        
-        # Validate and return
-        return ChatResponse(**chat_data)
-        
-    except Exception as e:
-        # Fallback response if API fails
-        print(f"Error calling Groq API for chat: {e}")
-        return ChatResponse(
-            assistantReply="I'm here to help you plan your project! Could you tell me what you'd like to build?",
-            progress=0,
-            isSufficient=False
-        )
-
 @app.post("/generate-plan")
 async def generate_plan(chat_history: ChatHistory):
     """
-    Generate a comprehensive project plan with dashboard data using Llama 3.1 70B via Groq API.
-    Includes two-stage validation to reject invalid inputs.
+    Generate a comprehensive project plan with dashboard data using Llama 3.3 70B via Groq API.
+    Validates input quality and rejects baseless queries.
     """
-    # Validation guard (safety net)
-    if len(chat_history.messages) < 3:
-        raise HTTPException(
-            status_code=400,
-            detail="Not enough information to generate a report. Please describe your project first."
-        )
-    
     # Get current date for the system prompt
     current_date = datetime.now().strftime("%B %d, %Y")
     
-    # Create high-fidelity system prompt that reads entire conversation
-    system_prompt = f"""You are a world-class project planning AI. Your **sole and entire task** is to generate a single, complex JSON object based on the provided conversation.
+    # SIMPLE RULE-BASED VALIDATION (No LLM calls - saves tokens!)
+    user_input = chat_history.messages[-1].content.strip().lower() if chat_history.messages else ''
+    
+    # List of invalid patterns (greetings and meaningless words)
+    invalid_patterns = [
+        'hi', 'hello', 'hey', 'yo', 'sup', "what's up", 'how are you',
+        'test', 'testing', '123', 'abc', 'asdf', 'qwerty'
+    ]
+    
+    # Check if input is too short
+    if len(user_input) < 5:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide a clear project description. For example: 'Build a mobile fitness tracking app in 3 months' or 'Create an e-commerce website for selling handmade crafts'. Include details about what you want to build, the timeline, and key features."
+        )
+    
+    # Check if input is just a greeting or meaningless word
+    if user_input in invalid_patterns:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide a clear project description. For example: 'Build a mobile fitness tracking app in 3 months' or 'Create an e-commerce website for selling handmade crafts'. Include details about what you want to build, the timeline, and key features."
+        )
+    
+    # Check if input is just random characters (no spaces and no common project words)
+    if ' ' not in user_input and len(user_input) < 15:
+        common_words = ['build', 'create', 'develop', 'make', 'design', 'app', 'website', 
+                       'platform', 'system', 'project', 'plan', 'launch', 'organize', 
+                       'campaign', 'portfolio', 'event']
+        has_common_word = any(word in user_input for word in common_words)
+        if not has_common_word:
+            raise HTTPException(
+                status_code=400,
+                detail="Please provide a clear project description. For example: 'Build a mobile fitness tracking app in 3 months' or 'Create an e-commerce website for selling handmade crafts'. Include details about what you want to build, the timeline, and key features."
+            )
+    
+    # ENHANCED PROJECT PLANNING PROMPT
+    system_prompt = f"""You are an expert project planning AI. Generate a highly customized, unique project plan based on the user's specific input.
 
 Current date: {current_date}. Calculate all dates relative to this date.
 
 **CRITICAL INSTRUCTIONS:**
-1. You will be given a *complete conversation history* in the messages array. You **must** read and synthesize this *entire history* from the beginning to the end to understand the full context.
-2. **Pay close attention to user corrections:** If a user says 'build a portfolio' and later in the chat says 'no, let's make it an e-commerce site', you **must** use the *latest* information ('e-commerce site'). Your report must reflect the *final, settled-upon plan* from the conversation.
-3. **Use all details:** Incorporate *all* specific details the user mentioned (timeline, team size, key features, technology preferences, constraints) into your plan.
+1. **ANALYZE THE INPUT CAREFULLY**: Read the user's project description and extract:
+   - Project type and goal
+   - Timeline (if mentioned, otherwise infer realistic timeline)
+   - Key features or requirements
+   - Team size or constraints
+   - Technology preferences
 
-**VALIDATION (Stage 1):**
-First, check if the conversation contains a valid plan. If the input is invalid (e.g., just 'hi', 'hello', 'sdjfhsk', or insufficient information):
-- STOP immediately
-- Return ONLY this JSON: {{"error": "Invalid input. Please provide a clear project goal, timeline, and key features first."}}
+2. **GENERATE UNIQUE, RELEVANT CONTENT**:
+   - Executive Summary: Write a UNIQUE 3-4 sentence summary specifically about THIS project, not generic text
+   - Key Milestones: Create 4-6 milestones that are SPECIFIC to this project type and timeline
+   - Technology Stack: Choose technologies that are ACTUALLY APPROPRIATE for this specific project
+   - Resources: Allocate roles based on the project's actual needs and timeline
+   - Timeline: Calculate realistic dates based on project complexity and mentioned timeline
 
-**JSON OUTPUT (Stage 2 - if valid):**
-If the input is valid, generate the full JSON object based *only* on the complete conversation history.
+3. **ENSURE VARIETY**: Every report should be different. Use the project details to create unique content.
 
-You MUST return ONLY a valid JSON object with this EXACT structure:
-
+**Output Structure:**
 {{
-  "projectName": "Short Project Name (e.g., 'Portfolio Website Build')",
-  "executiveSummary": "2-3 sentence high-level overview of the project's goal, duration, and key components.",
+  "projectName": "Specific name based on user's project (e.g., 'Fitness Tracking Mobile App' not 'Mobile App')",
+  "executiveSummary": "3-4 unique sentences describing THIS specific project's goal, approach, timeline, and expected outcomes. Be specific to the project type.",
   "keyMilestones": [
-    "Major checkpoint 1 (e.g., 'UI/UX Design Complete')",
-    "Major checkpoint 2 (e.g., 'Frontend V1 Deployed')",
-    "Major checkpoint 3"
+    "Milestone 1 specific to this project",
+    "Milestone 2 specific to this project",
+    "Milestone 3 specific to this project",
+    "Milestone 4 specific to this project"
   ],
   "technologyStack": [
     {{
-      "component": "Component name (e.g., 'Frontend', 'Backend', 'Database')",
-      "technology": "Technology choice (e.g., 'React', 'FastAPI', 'PostgreSQL')",
-      "rationale": "Brief justification (e.g., 'React for component-based UI and rich ecosystem')"
+      "component": "Component relevant to THIS project",
+      "technology": "Technology appropriate for THIS specific project type",
+      "rationale": "Why this tech makes sense for THIS particular project"
     }}
   ],
   "resourceSuggestions": [
-    "1x UI/UX Designer",
-    "1x Frontend Developer",
-    "1x Backend Developer"
+    "Roles needed for THIS specific project and timeline"
   ],
   "ganttData": {{
     "data": [
       {{
         "id": 1,
-        "text": "Task Name",
-        "start_date": "YYYY-MM-DD",
-        "duration": 5,
+        "text": "Task specific to this project",
+        "start_date": "YYYY-MM-DD (calculated from current date and project timeline)",
+        "duration": "Realistic duration for this task type",
         "progress": 0,
-        "owner": "Role/Unassigned"
+        "owner": "Role appropriate for this task"
       }}
     ],
     "links": [
@@ -265,31 +414,27 @@ You MUST return ONLY a valid JSON object with this EXACT structure:
   }}
 }}
 
-CRITICAL RULES:
-1. **READ THE ENTIRE CONVERSATION:** Analyze all messages from start to finish. Do not skip any messages.
-2. **USE LATEST INFORMATION:** If the user corrects or changes their mind, use the most recent information.
-3. **INCORPORATE ALL DETAILS:** Use every specific detail mentioned (timeline, team size, features, tech stack, constraints).
-4. Return ONLY the JSON - no markdown, no code blocks, no extra text
-5. projectName: Short, professional name reflecting the FINAL project idea from the conversation
-6. executiveSummary: 2-3 sentences covering goal, timeline, and scope based on the COMPLETE conversation
-7. keyMilestones: 3-5 major project checkpoints derived from the conversation
-8. technologyStack: 3-5 key technology components with component name, technology choice, and rationale based on project needs and technologies mentioned in conversation
-9. resourceSuggestions: List required roles/resources inferred from goal, timeline, and team size mentioned
-10. ganttData.data: 5-10 tasks with:
-    - Sequential IDs starting from 1
-    - Realistic task names based on the project discussed
-    - start_date in YYYY-MM-DD format
-    - duration in days (integer) - realistic based on timeline discussed
-    - progress: 0 (not started)
-    - owner: Role name or "Unassigned"
-11. ganttData.links: Task dependencies where:
-    - type "0" = finish-to-start
-    - source and target are task IDs
-    - Infer logical dependencies (e.g., design before development)
-12. Ensure dates are realistic and sequential based on the timeline discussed
-13. Make the plan comprehensive, professional, and ACCURATE to the conversation
+**EXAMPLES OF GOOD vs BAD:**
 
-**NOW:** Read the complete conversation history below, synthesize all information (paying special attention to corrections), and generate the project plan."""
+BAD (Generic): "This project aims to build a modern application with best practices."
+GOOD (Specific): "This fitness tracking mobile app will enable users to log workouts, track progress with visual charts, and share achievements with friends, targeting health-conscious millennials over a 3-month development cycle."
+
+BAD (Generic): "Design Phase Complete"
+GOOD (Specific): "User Interface Design for Workout Logging and Progress Dashboard Complete"
+
+BAD (Generic): "Frontend: React - Popular framework"
+GOOD (Specific): "Mobile App: React Native - Cross-platform development for iOS/Android with native performance for smooth workout tracking animations"
+
+**CRITICAL RULES:**
+1. Return ONLY valid JSON
+2. Make EVERY field unique and relevant to the user's input
+3. Use realistic timelines based on project complexity
+4. Choose appropriate technologies for the project type
+5. Create 6-10 Gantt tasks with logical dependencies
+6. Ensure all dates are sequential and realistic
+7. Match resource allocation to project scope and timeline
+
+Analyze the user's input below and create a UNIQUE, HIGHLY RELEVANT project plan:"""
 
     # Format messages for Groq
     formatted_messages = [
@@ -303,87 +448,62 @@ CRITICAL RULES:
             "content": msg.content
         })
     
-    try:
-        # Call Groq with Llama 3.3 70B (updated model)
-        chat_completion = client.chat.completions.create(
-            messages=formatted_messages,
-            model="llama-3.3-70b-versatile",
-            temperature=0.3,
-            response_format={"type": "json_object"}
-        )
-        
-        # Parse the JSON response
-        response_content = chat_completion.choices[0].message.content
-        plan_data = json.loads(response_content)
-        
-        # Validate and return
-        return PlanResponse(**plan_data)
-        
-    except Exception as e:
-        # Fallback to comprehensive mock data if Groq API fails
-        print(f"Error calling Groq API: {e}")
-        
-        # Calculate dates for mock data
-        today = datetime.now()
-        
-        mock_plan = PlanResponse(
-            projectName="Sample Project Plan",
-            executiveSummary="A comprehensive project to deliver a modern solution within 4 weeks. The project includes design, development, testing, and deployment phases with clear milestones and deliverables.",
-            keyMilestones=[
-                "Requirements & Design Complete",
-                "Development Phase 1 Complete",
-                "Testing & QA Complete",
-                "Production Deployment"
-            ],
-            technologyStack=[
-                TechnologyStack(
-                    component="Frontend",
-                    technology="React",
-                    rationale="Component-based architecture for maintainable UI and rich ecosystem"
-                ),
-                TechnologyStack(
-                    component="Backend",
-                    technology="FastAPI",
-                    rationale="High performance async framework with automatic API documentation"
-                ),
-                TechnologyStack(
-                    component="Database",
-                    technology="PostgreSQL",
-                    rationale="Robust relational database with excellent data integrity"
-                ),
-                TechnologyStack(
-                    component="Deployment",
-                    technology="Docker",
-                    rationale="Containerization for consistent deployment across environments"
-                )
-            ],
-            resourceSuggestions=[
-                "1x Project Manager",
-                "1x UI/UX Designer",
-                "2x Full-Stack Developers",
-                "1x QA Engineer"
-            ],
-            ganttData=GanttData(
-                data=[
-                    GanttTask(id=1, text="Project Planning & Requirements", start_date=(today).strftime("%Y-%m-%d"), duration=3, progress=0, owner="Project Manager"),
-                    GanttTask(id=2, text="UI/UX Design", start_date=(today + timedelta(days=3)).strftime("%Y-%m-%d"), duration=5, progress=0, owner="UI/UX Designer"),
-                    GanttTask(id=3, text="Frontend Development", start_date=(today + timedelta(days=8)).strftime("%Y-%m-%d"), duration=7, progress=0, owner="Frontend Developer"),
-                    GanttTask(id=4, text="Backend Development", start_date=(today + timedelta(days=8)).strftime("%Y-%m-%d"), duration=7, progress=0, owner="Backend Developer"),
-                    GanttTask(id=5, text="Integration & Testing", start_date=(today + timedelta(days=15)).strftime("%Y-%m-%d"), duration=5, progress=0, owner="QA Engineer"),
-                    GanttTask(id=6, text="Deployment & Launch", start_date=(today + timedelta(days=20)).strftime("%Y-%m-%d"), duration=2, progress=0, owner="DevOps")
-                ],
-                links=[
-                    GanttLink(id=1, source=1, target=2, type="0"),
-                    GanttLink(id=2, source=2, target=3, type="0"),
-                    GanttLink(id=3, source=2, target=4, type="0"),
-                    GanttLink(id=4, source=3, target=5, type="0"),
-                    GanttLink(id=5, source=4, target=5, type="0"),
-                    GanttLink(id=6, source=5, target=6, type="0")
-                ]
+    # MODEL FALLBACK CHAIN - Try models in order of quality
+    models_to_try = [
+        ("llama-3.3-70b-versatile", 0.3),  # Best quality, try first
+        ("llama-3.1-8b-instant", 0.3),     # Faster, separate rate limit
+        ("mixtral-8x7b-32768", 0.3)        # Alternative with good quality
+    ]
+    
+    last_error = None
+    
+    for model_name, temperature in models_to_try:
+        try:
+            print(f"Attempting to use model: {model_name}")
+            
+            chat_completion = client.chat.completions.create(
+                messages=formatted_messages,
+                model=model_name,
+                temperature=temperature,
+                response_format={"type": "json_object"}
             )
-        )
-        
-        return mock_plan
+            
+            # Parse the JSON response
+            response_content = chat_completion.choices[0].message.content
+            plan_data = json.loads(response_content)
+            
+            print(f"Successfully generated plan using model: {model_name}")
+            
+            # Validate and return
+            return PlanResponse(**plan_data)
+            
+        except Exception as e:
+            last_error = e
+            error_message = str(e)
+            print(f"Model {model_name} failed: {error_message}")
+            
+            # Try next model for any error (rate limit, validation, etc.)
+            # This ensures we try all 3 models before giving up
+            if "rate_limit" in error_message.lower() or "429" in error_message:
+                print(f"Rate limit hit for {model_name}, trying next model...")
+            elif "validation" in error_message.lower() or "pydantic" in error_message.lower():
+                print(f"Validation error with {model_name}, trying next model...")
+            else:
+                print(f"Error with {model_name}, trying next model...")
+            
+            # Always continue to try the next model
+            continue
+    
+    # If all models fail, use smart fallback mock data
+    print(f"All models failed, using smart fallback mock data. Last error: {last_error}")
+    
+    # Generate relevant mock data based on user input
+    user_input = chat_history.messages[-1].content if chat_history.messages else "web application"
+    mock_plan = generate_smart_mock_data(user_input)
+    
+    print(f"Generated smart mock data for project type based on: {user_input[:50]}...")
+    
+    return mock_plan
 
 @app.post("/generate-pdf")
 async def generate_pdf_report(plan: PlanResponse):
@@ -422,4 +542,3 @@ async def generate_pdf_report(plan: PlanResponse):
 async def root():
     """Health check endpoint"""
     return {"status": "ok", "message": "LyzrFlow API v2.0 - Professional Dashboard"}
-
