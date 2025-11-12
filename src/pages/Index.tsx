@@ -45,26 +45,19 @@ interface Message {
   content: string;
 }
 
-const BACKEND_URL = "http://127.0.0.1:8000";
+// Use environment variable for backend URL, fallback to localhost for development
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000";
 
 const Index = () => {
   const [view, setView] = useState('home');
-  const [chatKey, setChatKey] = useState(0);
-  const initialMessages: Message[] = [];
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [planData, setPlanData] = useState<PlanData | null>(null);
-  const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
-  const [editedContent, setEditedContent] = useState('');
   const [showTutorial, setShowTutorial] = useState(
     localStorage.getItem('lyzrflow_tutorial_seen') !== 'true'
   );
-  const [isReportReady, setIsReportReady] = useState(false);
-  const [chatProgress, setChatProgress] = useState(0);
-  const [showReportReadyMessage, setShowReportReadyMessage] = useState(false);
-  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const suggestionChips = [
     "Plan a mobile app launch in 3 months",
@@ -82,190 +75,64 @@ const Index = () => {
   }, [isDarkMode]);
 
   const handleNewProject = () => {
-    // Increment the key to force React to destroy the old chat component
-    // and mount a brand new one (mimicking a browser reload).
-    setChatKey(prevKey => prevKey + 1);
-    
-    // Reset all state manually as well for safety
-    setMessages([]);
+    // Reset state
     setPlanData(null);
-    setIsReportReady(false);
-    setChatProgress(0);
-    setShowReportReadyMessage(false);
     setInputValue('');
-    setEditingMessageIndex(null);
-    setEditedContent('');
-    setIsChatLoading(false);
+    setIsLoading(false);
     
-    // Go to chat view
-    setView('chat');
+    // Go to input view
+    setView('input');
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleGenerateReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    // Create user message
-    const userMessage = { role: 'user', content: inputValue };
-    const updatedMessages = [...messages, userMessage];
-    
-    // Update UI immediately
-    setMessages(updatedMessages);
-    setInputValue('');
-    setIsChatLoading(true);
-
-    try {
-      // Call intelligent chat endpoint
-      const response = await axios.post(`${BACKEND_URL}/chat`, {
-        messages: updatedMessages
-      });
-
-      const { assistantReply, progress, isSufficient } = response.data;
-
-      // CRITICAL: Update button state based on isSufficient (bidirectional)
-      if (isSufficient) {
-        setIsReportReady(true);
-        setShowReportReadyMessage(true);
-      } else {
-        setIsReportReady(false);
-        setShowReportReadyMessage(false);
-      }
-      
-      setChatProgress(progress);
-
-      // Add empty assistant message bubble
-      const emptyAssistantMsg = { role: 'assistant', content: '' };
-      setMessages(currentMsgs => [...currentMsgs, emptyAssistantMsg]);
-
-      // Stream the text word by word for ChatGPT-like effect
-      const words = assistantReply.split(' ');
-      let currentContent = '';
-      
-      for (const word of words) {
-        currentContent += word + ' ';
-        setMessages(currentMsgs => {
-          const allExceptLast = currentMsgs.slice(0, -1);
-          const lastMsg = { ...currentMsgs[currentMsgs.length - 1], content: currentContent.trim() };
-          return [...allExceptLast, lastMsg];
-        });
-        // Wait 50ms before adding next word
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    } catch (error) {
-      console.error("Error in chat:", error);
-      // Fallback response
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'I apologize, I encountered an error. Could you please try again?'
-      }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
-  const handleSuggestionClick = async (suggestion: string) => {
-    const userMessage = { role: 'user', content: suggestion };
-    const updatedMessages = [...messages, userMessage];
-    
-    setMessages(updatedMessages);
-    setIsChatLoading(true);
-
-    try {
-      const response = await axios.post(`${BACKEND_URL}/chat`, {
-        messages: updatedMessages
-      });
-
-      const { assistantReply, progress, isSufficient } = response.data;
-
-      // Update button state (bidirectional)
-      if (isSufficient) {
-        setIsReportReady(true);
-        setShowReportReadyMessage(true);
-      } else {
-        setIsReportReady(false);
-        setShowReportReadyMessage(false);
-      }
-      
-      setChatProgress(progress);
-
-      // Add empty assistant message bubble
-      const emptyAssistantMsg = { role: 'assistant', content: '' };
-      setMessages(currentMsgs => [...currentMsgs, emptyAssistantMsg]);
-
-      // Stream the text word by word for ChatGPT-like effect
-      const words = assistantReply.split(' ');
-      let currentContent = '';
-      
-      for (const word of words) {
-        currentContent += word + ' ';
-        setMessages(currentMsgs => {
-          const allExceptLast = currentMsgs.slice(0, -1);
-          const lastMsg = { ...currentMsgs[currentMsgs.length - 1], content: currentContent.trim() };
-          return [...allExceptLast, lastMsg];
-        });
-        // Wait 50ms before adding next word
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    } catch (error) {
-      console.error("Error in chat:", error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Great! I can help you plan that. Please provide any additional details.'
-      }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
-  const handleEditMessage = (index: number) => {
-    setEditingMessageIndex(index);
-    setEditedContent(messages[index].content);
-  };
-
-  const handleSaveEdit = () => {
-    if (editingMessageIndex !== null) {
-      const updatedMessages = [...messages];
-      updatedMessages[editingMessageIndex].content = editedContent;
-      setMessages(updatedMessages);
-      setEditingMessageIndex(null);
-      setEditedContent('');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingMessageIndex(null);
-    setEditedContent('');
-  };
-
-  const handleGenerateReport = async () => {
-    // Hide ready message and show loading
     setIsLoading(true);
-    setShowReportReadyMessage(false);
-    setIsReportReady(false); // Disable button immediately
+    setErrorMessage(null);
     
     try {
+      // Call generate-plan endpoint directly with user's input
       const response = await axios.post(`${BACKEND_URL}/generate-plan`, {
-        messages: messages
+        messages: [{ role: 'user', content: inputValue }]
       });
       
-      // CRITICAL: Check for error key from two-stage validator
-      if (response.data.error) {
-        // LLM validation failed
-        alert("Report Generation Failed: " + response.data.error);
-      } else {
-        // Success! Show dashboard
-        setPlanData(response.data);
-        setView('dashboard');
-      }
+      // Success! Show dashboard
+      setPlanData(response.data);
+      setView('dashboard');
     } catch (error: unknown) {
-      // Handle network/server errors
       console.error("Failed to generate report:", error);
       const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || "An unknown server error occurred.";
-      alert("Report Failed: " + errorMsg);
+      setErrorMessage(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleSuggestionClick = async (suggestion: string) => {
+    setInputValue(suggestion);
+    setIsLoading(true);
+    setErrorMessage(null);
+    
+    try {
+      // Call generate-plan endpoint directly with suggestion
+      const response = await axios.post(`${BACKEND_URL}/generate-plan`, {
+        messages: [{ role: 'user', content: suggestion }]
+      });
+      
+      // Success! Show dashboard
+      setPlanData(response.data);
+      setView('dashboard');
+    } catch (error: unknown) {
+      console.error("Failed to generate report:", error);
+      const errorMsg = (error as { response?: { data?: { detail?: string } } }).response?.data?.detail || "An unknown server error occurred.";
+      setErrorMessage(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
 
   const handleDownloadPDF = async () => {
     if (!planData) return;
@@ -429,7 +296,7 @@ const Index = () => {
               </div>
 
               <button
-                onClick={() => setView('chat')}
+                onClick={() => setView('input')}
                 className="px-6 sm:px-8 py-3 sm:py-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all font-semibold text-base sm:text-lg flex items-center gap-2 mx-auto shadow-xl hover:shadow-2xl hover:scale-105 transform"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -475,9 +342,9 @@ const Index = () => {
           <header className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setView('chat')}
+                onClick={() => setView('input')}
                 className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-white/10 transition-colors"
-                aria-label="Back to chat"
+                aria-label="Back to input"
               >
                 <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -576,11 +443,11 @@ const Index = () => {
     );
   }
 
-  // Chat View
+  // Input View - Simplified Single-Shot Input
   return (
     <div className="h-screen w-screen flex bg-white dark:bg-gray-900 transition-colors">
       <Sidebar />
-      <div key={chatKey} className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col relative">
         {/* Tutorial Dialog */}
         {showTutorial && (
           <TutorialDialog 
@@ -589,16 +456,6 @@ const Index = () => {
               localStorage.setItem('lyzrflow_tutorial_seen', 'true');
             }} 
           />
-        )}
-
-        {/* Floating Progress Card */}
-        {chatProgress > 0 && chatProgress < 100 && (
-          <div className="fixed bottom-24 left-6 z-50 px-4 py-3 rounded-lg shadow-xl bg-white dark:bg-gray-800 border border-blue-500/50 dark:border-blue-500/30 animate-pulse">
-            <div className="flex flex-col items-center">
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">Planning Progress</span>
-              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{chatProgress}%</span>
-            </div>
-          </div>
         )}
 
         <header className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0">
@@ -616,158 +473,97 @@ const Index = () => {
           </div>
         </header>
 
-        <div className="flex-grow overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full space-y-4 sm:space-y-6 px-4">
-              <div className="text-center space-y-2">
-                <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Start Your Project</h2>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Choose a suggestion or describe your project</p>
+        <div className="flex-grow flex flex-col items-center justify-center px-4 sm:px-6 py-8">
+          <div className="w-full max-w-3xl space-y-6">
+            <div className="text-center space-y-3">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+                Describe Your Project
+              </h2>
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
+                Provide a comprehensive description of your project in one go. Include goals, timeline, features, and team size for the best results.
+              </p>
+            </div>
+
+            {/* Suggestion Chips */}
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center">
+              {suggestionChips.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={isLoading}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="text-sm text-red-900 dark:text-red-200">
+                    <p className="font-semibold mb-1">Invalid Input</p>
+                    <p>{errorMessage}</p>
+                  </div>
+                </div>
               </div>
+            )}
+
+            {/* Input Form */}
+            <form onSubmit={handleGenerateReport} className="space-y-4">
+              <textarea
+                value={inputValue}
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  setErrorMessage(null);
+                }}
+                placeholder="Example: Build a mobile app for fitness tracking in 3 months with a team of 4 developers. Key features include workout logging, progress charts, and social sharing..."
+                rows={6}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+              />
               
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center max-w-2xl">
-                {suggestionChips.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-600 transition-colors"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {messages.length > 0 && messages.length <= 2 && (
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-2">
-                {suggestionChips.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-600 transition-colors"
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[70%] p-3 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm'
-                }`}
+              <button
+                type="submit"
+                disabled={!inputValue.trim() || isLoading}
+                className="w-full px-6 py-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors font-semibold text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
-                {editingMessageIndex === index ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      className="w-full p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-white/10"
-                      rows={3}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSaveEdit}
-                        className="px-3 py-1 text-sm rounded bg-green-600 text-white hover:bg-green-700"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="px-3 py-1 text-sm rounded bg-gray-600 text-white hover:bg-gray-700"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+                {isLoading ? (
+                  <>
+                    <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Generating Professional Report...</span>
+                  </>
                 ) : (
-                  <div className="flex items-start gap-2">
-                    <span className="flex-1">{message.content}</span>
-                    {message.role === 'user' && (
-                      <button
-                        onClick={() => handleEditMessage(index)}
-                        className="flex-shrink-0 p-1 rounded hover:bg-white/20 transition-colors"
-                        aria-label="Edit message"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  <>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Generate Report</span>
+                  </>
                 )}
+              </button>
+            </form>
+
+            {/* Info Box */}
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex gap-3">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm text-blue-900 dark:text-blue-200">
+                  <p className="font-semibold mb-1">Pro Tip:</p>
+                  <p>The more details you provide, the better your project plan will be. Include specific timelines, team composition, and key features for optimal results.</p>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 relative">
-          {/* Report Ready Message */}
-          {showReportReadyMessage && isReportReady && !isLoading && (
-            <div className="absolute -top-12 right-4 flex flex-col items-center animate-bounce">
-              <span className="px-3 py-1 bg-green-500 text-white text-sm font-bold rounded-md shadow-lg">
-                Report is Ready!
-              </span>
-              <span className="text-green-500 text-2xl">↓</span>
-            </div>
-          )}
-          
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Describe your project..."
-              className="flex-grow px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder:text-gray-500 dark:placeholder:text-gray-400"
-            />
-            <button
-              type="submit"
-              disabled={!inputValue.trim() || isChatLoading}
-              className="px-4 py-3 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Send message"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={handleGenerateReport}
-              disabled={!isReportReady || isLoading}
-              className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-all duration-200 ${
-                isReportReady && !isLoading
-                  ? 'bg-pink-600 text-white hover:bg-pink-700 cursor-pointer animate-pulse'
-                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed opacity-50'
-              }`}
-            >
-              {isLoading ? (
-                <>
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>Generate Report</span>
-                </>
-              )}
-            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
