@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 211 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 211 100% 50%;
+
+    --radius: 0.5rem;
+
+    --chat-user: 211 100% 50%;
+    --chat-user-foreground: 0 0% 100%;
+    --chat-assistant: 220 13% 91%;
+    --chat-assistant-foreground: 222.2 84% 4.9%;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 20%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 240 5% 20%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 211 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 25%;
+    --input: 240 5% 15%;
+    --ring: 211 100% 50%;
+
+    --chat-user: 211 100% 50%;
+    --chat-user-foreground: 0 0% 100%;
+    --chat-assistant: 240 5% 20%;
+    --chat-assistant-foreground: 0 0% 95%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Gantt Chart Custom Styling - Blue Theme */
+.gantt_task_line {
+  background-color: #007BFF !important;
+  border-color: #0056b3 !important;
+}
+
+.gantt_task_progress {
+  background-color: #0056b3 !important;
+}
+
+.gantt_task_line.gantt_selected {
+  background-color: #0056b3 !important;
+  border-color: #003d82 !important;
+}
+
+.gantt_grid_scale,
+.gantt_task_scale {
+  background-color: #f8f9fa !important;
+  border-color: #dee2e6 !important;
+}
+
+.gantt_task .gantt_task_scale .gantt_scale_cell {
+  border-right: 1px solid #dee2e6 !important;
+}
+
+.gantt_marker {
+  background-color: #007BFF !important;
+}
+
+.gantt_marker .gantt_marker_content {
+  background-color: #007BFF !important;
+  color: white !important;
+}
+
+/* Dark mode Gantt styling */
+.dark .gantt_grid_scale,
+.dark .gantt_task_scale {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.dark .gantt_grid_data .gantt_cell,
+.dark .gantt_grid_data .gantt_row {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.dark .gantt_task_line {
+  background-color: #007BFF !important;
+  border-color: #0056b3 !important;
+}
+
+.dark .gantt_task_bg {
+  background-color: #1f2937 !important;
+}

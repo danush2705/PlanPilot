@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ plan.projectName }}</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 25px;
+        }
+        h1, h2, h3 {
+            color: #111;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        h1 {
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 22px;
+            margin-top: 25px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        .summary {
+            font-size: 1.1em;
+            font-style: italic;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ plan.projectName | e }}</h1>
+    
+    <div class="section">
+        <h2>Executive Summary</h2>
+        <p class="summary">{{ plan.executiveSummary | e }}</p>
+    </div>
+    
+    <div class="section">
+        <h2>Key Milestones</h2>
+        <ul>
+            {% for milestone in plan.keyMilestones %}
+            <li>{{ milestone | e }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Potential Risks & Mitigations</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Potential Risk</th>
+                    <th>Mitigation Strategy</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in plan.potentialRisks %}
+                <tr>
+                    <td>{{ item.risk | e }}</td>
+                    <td>{{ item.mitigation | e }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2>Resource Suggestions</h2>
+        <ul>
+            {% for resource in plan.resourceSuggestions %}
+            <li>{{ resource | e }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>Detailed Task Breakdown</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Task Name</th>
+                    <th>Start Date</th>
+                    <th>Duration</th>
+                    <th>Owner</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in plan.ganttData.data %}
+                <tr>
+                    <td>{{ task.text | e }}</td>
+                    <td>{{ task.start_date | e }}</td>
+                    <td>{{ task.duration }} days</td>
+                    <td>{{ task.owner | e }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
