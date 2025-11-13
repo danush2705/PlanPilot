@@ -407,7 +407,7 @@ npm run preview
 
 ### Important Notes
 
-- **Render Free Tier**: Backend sleeps after 15 minutes of inactivity (30-60s cold start)
+- **Render Free Tier Cold Start**: Since the backend is hosted on a free tier, the initial request after 15 minutes of inactivity may take up to 45 seconds to process due to "cold start" behavior. Subsequent requests will be much faster.
 - **Environment Variables**: Must be set in hosting platform dashboards, not in `.env` files
 - **CORS**: Already configured to allow all origins (update in production for security)
 - **Health Checks**: Backend includes `/` endpoint for Render health monitoring
