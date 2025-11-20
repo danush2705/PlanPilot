@@ -383,7 +383,7 @@ npm run preview
 
 4. **Deploy**
    - Render will automatically build and deploy
-   - Copy your backend URL (e.g., `https://planpilot-backend.onrender.com`)
+   - Copy your backend URL (e.g., `https://lyzrflow-backend.onrender.com`)
 
 ### Frontend Deployment (Netlify)
 
@@ -398,12 +398,12 @@ npm run preview
 2. **Add Environment Variables**
    - Go to Site settings → Environment variables
    - Add: `VITE_BACKEND_URL` = your_render_backend_url
-   - Example: `https://planpilot-backend.onrender.com`
+   - Example: `https://lyzrflow-backend.onrender.com`
 
 3. **Deploy**
    - Click "Deploy site"
    - Netlify will build and deploy automatically
-   - Your site will be live at `https://your-site-name.netlify.app`
+   - Your site will be live at `https://plan-pilot.netlify.app`
 
 ### Important Notes
 
