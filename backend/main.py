@@ -1,4 +1,4 @@
-# LyzrFlow Backend - FastAPI Server
+# PlanPilot Backend - FastAPI Server
 # Professional Project Dashboard with Comprehensive Planning
 
 from fastapi import FastAPI, HTTPException
@@ -59,7 +59,7 @@ class PlanResponse(BaseModel):
     ganttData: GanttData
 
 # Initialize FastAPI app
-app = FastAPI(title="LyzrFlow API", version="2.0.0")
+app = FastAPI(title="PlanPilot API", version="2.0.0")
 
 # Configure CORS
 app.add_middleware(
@@ -527,7 +527,7 @@ async def generate_pdf_report(plan: PlanResponse):
         return Response(
             content=pdf_bytes,
             media_type='application/pdf',
-            headers={'Content-Disposition': 'attachment; filename="LyzrFlow_Report.pdf"'}
+            headers={'Content-Disposition': 'attachment; filename="PlanPilot_Report.pdf"'}
         )
         
     except Exception as e:
@@ -542,4 +542,4 @@ async def generate_pdf_report(plan: PlanResponse):
 @app.head("/")
 async def root():
     """Health check endpoint - supports both GET and HEAD requests"""
-    return {"status": "ok", "message": "LyzrFlow API v2.0 - Professional Dashboard"}
+    return {"status": "ok", "message": "PlanPilot API v2.0 - Professional Dashboard"}

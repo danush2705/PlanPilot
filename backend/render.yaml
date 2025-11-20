@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: lyzrflow-backend
+    name: planpilot-backend
     env: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
