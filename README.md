@@ -1,8 +1,8 @@
-# LyzrFlow
+# PlanPilot
 
 <div align="center">
 
-![LyzrFlow Logo](public/LyzrFlow_Icon.svg)
+![PlanPilot Logo](public/PlanPilot_Icon.svg)
 
 **AI-Powered Project Planning Dashboard**
 
@@ -34,11 +34,11 @@ Transform conversations into professional project plans with AI-driven insights,
 
 ## 🎯 Overview
 
-**LyzrFlow** is an intelligent project planning application that revolutionizes how teams create project plans. Instead of manually filling out forms and spreadsheets, simply have a conversation with our AI assistant. LyzrFlow extracts key project details, generates structured plans, and visualizes them with professional Gantt charts—all in minutes.
+**PlanPilot** is an intelligent project planning application that revolutionizes how teams create project plans. Instead of manually filling out forms and spreadsheets, simply have a conversation with our AI assistant. PlanPilot extracts key project details, generates structured plans, and visualizes them with professional Gantt charts—all in minutes.
 
 ### How It Works
 
-LyzrFlow uses a streamlined single-shot approach to project planning:
+PlanPilot uses a streamlined single-shot approach to project planning:
 
 1. **Describe**: Provide a comprehensive project description in one go
    - Include goals, timeline, features, and team size
@@ -86,7 +86,7 @@ LyzrFlow uses a streamlined single-shot approach to project planning:
   - Automatic fallback to alternative models on rate limits
   - Smart mock data generation based on project keywords
 
-- **� Profetssional Dashboards**
+- **📊 Professional Dashboards**
   - Auto-generated Gantt charts with task dependencies
   - Executive summary tailored to your project
   - Technology stack recommendations with detailed rationale
@@ -215,8 +215,8 @@ Before you begin, ensure you have the following installed on your system:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/lyzrflow.git
-cd lyzrflow
+git clone https://github.com/yourusername/planpilot.git
+cd planpilot
 ```
 
 ### 2. Frontend Setup
@@ -369,7 +369,7 @@ npm run preview
    - Click "New +" → "Web Service"
    - Connect your repository
    - Configure:
-     - **Name**: `lyzrflow-backend`
+     - **Name**: `planpilot-backend`
      - **Language**: Python 3
      - **Root Directory**: `backend`
      - **Build Command**: `pip install -r requirements.txt`
@@ -383,7 +383,7 @@ npm run preview
 
 4. **Deploy**
    - Render will automatically build and deploy
-   - Copy your backend URL (e.g., `https://lyzrflow-backend.onrender.com`)
+   - Copy your backend URL (e.g., `https://planpilot-backend.onrender.com`)
 
 ### Frontend Deployment (Netlify)
 
@@ -398,7 +398,7 @@ npm run preview
 2. **Add Environment Variables**
    - Go to Site settings → Environment variables
    - Add: `VITE_BACKEND_URL` = your_render_backend_url
-   - Example: `https://lyzrflow-backend.onrender.com`
+   - Example: `https://planpilot-backend.onrender.com`
 
 3. **Deploy**
    - Click "Deploy site"
@@ -418,7 +418,7 @@ npm run preview
 
 MIT License
 
-Copyright (c) 2025 LyzrFlow
+Copyright (c) 2025 PlanPilot
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
