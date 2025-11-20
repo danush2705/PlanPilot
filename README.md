@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![PlanPilot Logo](public/PlanPilot_Icon.svg)
+![PlanPilot Logo](public/icon.jpg)
 
 **AI-Powered Project Planning Dashboard**
 
