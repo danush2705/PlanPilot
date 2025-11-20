@@ -15,7 +15,7 @@ const TutorialDialog = ({ onClose }: TutorialDialogProps) => {
 
   const tutorialSteps = [
     {
-      title: "Welcome to LyzrFlow!",
+      title: "Welcome to PlanPilot!",
       content: "Let's plan your project together. I'll guide you through the process.",
       icon: "👋"
     },
