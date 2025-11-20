@@ -55,7 +55,7 @@ const Index = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [showTutorial, setShowTutorial] = useState(
-    localStorage.getItem('lyzrflow_tutorial_seen') !== 'true'
+    localStorage.getItem('planpilot_tutorial_seen') !== 'true'
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -149,7 +149,7 @@ const Index = () => {
       const safeName = planData.projectName
         .replace(/[^a-zA-Z0-9 ]/g, '') // Remove special chars
         .replace(/ /g, '_') // Replace spaces with underscores
-        || 'LyzrFlow_Plan'; // Fallback name
+        || 'PlanPilot_Plan'; // Fallback name
       const fileName = `${safeName}.pdf`;
       
       // 3. Save the file with dynamic name
@@ -170,7 +170,7 @@ const Index = () => {
           <path d="M20 15 L35 40 L20 65" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           <path d="M40 15 L55 40 L40 65" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </svg>
-        <span className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">LyzrFlow</span>
+        <span className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">PlanPilot</span>
       </div>
 
       <button
@@ -219,7 +219,7 @@ const Index = () => {
             <div className="w-full max-w-3xl mx-auto space-y-4 lg:space-y-5">
               <div>
                 <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-3 leading-tight">
-                  LyzrFlow AI Project Planner
+                  PlanPilot AI Project Planner
                 </h1>
                 <p className="text-base sm:text-lg md:text-xl text-gray-600 dark:text-gray-400">
                   Transform conversations into structured project plans
@@ -228,7 +228,7 @@ const Index = () => {
 
               <div className="space-y-3 lg:space-y-4 text-gray-700 dark:text-gray-300 text-sm md:text-base leading-relaxed">
                 <p>
-                  LyzrFlow revolutionizes project planning by converting natural conversations into comprehensive, 
+                  PlanPilot revolutionizes project planning by converting natural conversations into comprehensive, 
                   industry-standard project documentation. Our AI-powered system guides you through an intelligent 
                   dialogue, extracting key project details and automatically generating professional Gantt charts.
                 </p>
@@ -453,7 +453,7 @@ const Index = () => {
           <TutorialDialog 
             onClose={() => {
               setShowTutorial(false);
-              localStorage.setItem('lyzrflow_tutorial_seen', 'true');
+              localStorage.setItem('planpilot_tutorial_seen', 'true');
             }} 
           />
         )}
